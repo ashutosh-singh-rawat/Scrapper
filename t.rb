@@ -2,7 +2,6 @@
 require 'net/http'
 require 'uri'
 require 'pry'
-# require 'resolv-replace'
 require 'resolv-replace'
 class ProxyList
   extend Forwardable
@@ -68,7 +67,7 @@ def load_uri(uri)
   response = @proxies.proxy.get(uri)
   result = nil
   if response.code == '301'
-    puts (response.body)
+    # puts (response.body)
     puts "Moved Temporarily"
     retry!(uri)
   elsif response.code == '200'
@@ -77,8 +76,14 @@ def load_uri(uri)
   elsif response.code == '429'
     binding.pry
     retry!(uri)
+  elsif response.code == '403'
+    puts "403 Forbidden"
+    retry!(uri)
   elsif response.code == '502'
     puts "Invalid proxy response"
+    retry!(uri)
+  elsif response.code == '503'
+    puts "Maximum number of open connections reached"
     retry!(uri)
   end
   binding.pry
@@ -89,7 +94,10 @@ rescue Errno::ECONNRESET => e
   #retry
   retry!(uri)
 rescue Net::OpenTimeout => e
-  puts 'Time out'
+  puts 'Open Time out'
+  retry!(uri)
+rescue Net::ReadTimeout => e
+  puts 'Read Time out'
   retry!(uri)
 rescue Errno::ECONNREFUSED => e
   puts 'Connection Refused'
@@ -105,10 +113,11 @@ output_path  = '/home/ashutosh/Desktop/scrap/'
 @proxies = ProxyList.load(proxies_path)
 @output_path = output_path
 @sleep_time = 0
-URL = 'https://www.paginegialle.it/eng/%s'.freeze
+URL = 'https://www.paginegialle.it/eng/ricerca/%s'.freeze
 URL1 = "http://www.upcitemdb.com/upc/%s".freeze
 
 
-u = URI.parse(format(URL, 'ricerca/pizzeria/Terni(TR)'))
+u = URI.parse(format(URL, 'barber%20shop/Torino?'))
 u1 = URI.parse(format(URL1, '4895182941618'))
+binding.pry
 html = load_uri(u)
